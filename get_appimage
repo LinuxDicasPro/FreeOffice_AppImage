@@ -1,0 +1,251 @@
+#!/bin/bash
+#
+# tarball2appimage by LinuxDicasPro
+#
+####################################
+
+
+destdir=~/__APPIMAGE__
+test -e "../_APPIMAGE" && destdir="../_APPIMAGE" # Opcional
+
+
+###########################################
+
+arch="x86_64"
+prg="FreeOffice"
+link="https://www.freeoffice.com/"
+link_rev="https://www.freeoffice.com/pt/baixar/aplicativos"
+
+###########################################
+
+
+for i in {1..35}; { printf '─'; }; printf "\n"
+printf "Search latest version: "
+
+
+########
+
+version="$(grep -Eom1 "[0-9]{4}" <(grep "FreeOffice" <(links -dump "$link")))"
+revision="$(tail -1 <(grep -Eom1 "[0-9]+" <(grep ":" <(links -dump "$link_rev"))))"
+
+########
+
+
+printf "\033[1;32m$version $revision\033[m\n"
+for i in {1..35}; { printf '─'; }; printf "\n"
+
+test -z "$version" && {
+    echo "update script. version not found!"
+    exit 1
+}
+
+set -e
+
+test ! -e $destdir && mkdir -p $destdir
+cd $destdir
+
+
+test -e "$prg-$version-$arch.AppImage" && {
+    echo "appimage found!"
+    exit 0
+}
+
+
+test ! -e "appimagetool-x86_64.AppImage" && {
+    link_tool="https://github.com/AppImage/AppImageKit/releases/download/13/appimagetool-x86_64.AppImage"
+    wget -c -q --show-progress "$link_tool"
+    chmod +x "appimagetool-x86_64.AppImage"
+}
+
+
+#########
+
+link_prg="https://www.softmaker.net/down/softmaker-freeoffice-${version}-${revision}-amd64.tgz"
+
+#########
+
+
+wget -c -q --show-progress "$link_prg"
+file_prg=${link_prg##*/}
+
+cwd=$PWD
+
+rm -rf "$prg.AppDir"
+mkdir -p "$prg.AppDir/$prg"
+cd "$prg.AppDir"
+
+echo -e "\nextract $file_prg ..."
+printf "$file_prg\t["
+tar -xf "$cwd/$file_prg" --checkpoint=500 --checkpoint-action=exec='printf ='
+echo -e "]\n"
+
+echo -e "\nextract freeoffice${version}.tar.lzma ..."
+printf "$file_prg\t["
+tar -xf "freeoffice${version}.tar.lzma" -C "$cwd/$prg.AppDir/$prg" --checkpoint=500 --checkpoint-action=exec='printf ='
+echo -e "]\n"
+
+rm "installfreeoffice" "freeoffice${version}.tar.lzma"
+cp FreeOffice/icons/{pml,prl,tml}_1024.png .
+
+echo "[Desktop Entry]
+Categories=Application;Office;Spreadsheet;
+Comment=PlanMaker lets you create all kinds of spreadsheets -- from simple ones to the most complex ones. Includes a high-caliber charting module.
+Encoding=UTF-8
+Exec=/usr/bin/planmaker24free %F
+GenericName=Spreadsheet
+Icon=pml_1024
+InitialPreference=10
+MimeType=application/x-pmd;application/x-pmdx;application/x-pmv;application/excel;application/x-excel;application/x-ms-excel;application/x-msexcel;application/x-sylk;application/x-xls;application/xls;application/vnd.ms-excel;application/vnd.stardivision.calc;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;application/vnd.openxmlformats-officedocument.spreadsheetml.template;application/vnd.ms-excel.sheet.macroenabled.12;application/vnd.openxmlformats-officedocument.spreadsheetml.template;application/vnd.ms-excel.template.macroEnabled.12;application/x-dif;text/spreadsheet;text/csv;application/x-prn;application/vnd.ms-excel.sheet.binary.macroenabled.12;
+Name=FreeOffice 2024 PlanMaker
+NoDisplay=false
+StartupNotify=true
+StartupWMClass=pm
+Terminal=0
+Type=Application
+Version=1.0" > planmaker-free24.desktop
+
+echo "[Desktop Entry]
+Categories=Application;Office;Presentation;
+Comment=The Presentations software lets you design any kind of presentation - even including special effects, animations, and transitions.
+Encoding=UTF-8
+Exec=/usr/bin/presentations24free %F
+GenericName=Presentation
+Icon=prl_1024
+InitialPreference=10
+MimeType=application/x-prdx;application/x-prvx;application/x-prsx;application/x-prd;application/x-prv;application/x-prs;application/ppt;application/mspowerpoint;application/vnd.ms-powerpoint;application/vnd.openxmlformats-officedocument.presentationml.presentation;application/vnd.ms-powerpoint.presentation.macroenabled.12;application/vnd.openxmlformats-officedocument.presentationml.template;application/vnd.ms-powerpoint.template.macroEnabled.12;application/vnd.ms-powerpoint.slideshow.macroenabled.12;application/vnd.openxmlformats-officedocument.presentationml.slideshow;
+Name=FreeOffice 2024 Presentations
+NoDisplay=false
+StartupNotify=true
+StartupWMClass=pr
+Terminal=0
+Type=Application
+Version=1.0" > presentations-free24.desktop
+
+echo "[Desktop Entry]
+Categories=Application;Office;WordProcessor;
+Comment=The TextMaker word processor lets you work on any type of document.
+Encoding=UTF-8
+Exec=/usr/bin/textmaker24free %F
+GenericName=Word Processor
+Icon=tml_1024
+InitialPreference=10
+MimeType=application/x-tmdx;application/x-tmvx;application/x-tmd;application/x-tmv;application/msword;application/vnd.ms-word;application/x-doc;text/rtf;application/rtf;application/vnd.oasis.opendocument.text;application/vnd.oasis.opendocument.text-template;application/vnd.stardivision.writer;application/vnd.sun.xml.writer;application/vnd.sun.xml.writer.template;application/vnd.openxmlformats-officedocument.wordprocessingml.document;application/vnd.ms-word.document.macroenabled.12;application/vnd.openxmlformats-officedocument.wordprocessingml.template;application/vnd.ms-word.template.macroenabled.12;application/x-pocket-word;application/x-dbf;application/msword-template;
+Name=FreeOffice 2024 TextMaker
+NoDisplay=false
+StartupNotify=true
+StartupWMClass=tm
+Terminal=0
+Type=Application
+Version=1.0" > textmaker-free24.desktop
+
+echo '#!/bin/bash
+cd "$APPDIR"
+BASEIMAGE="${APPIMAGE##*/}"
+
+text="FreeOffice-TextMaker.AppImage"
+plan="FreeOffice-PlanMaker.AppImage"
+pres="FreeOffice-Presentations.AppImage"
+
+cd FreeOffice
+[ "$BASEIMAGE" == "$text" ] && {
+    ./textmaker "$@"
+    exit 0
+}
+
+[ "$BASEIMAGE" == "$plan" ] && {
+    ./planmaker "$@"
+    exit 0
+}
+
+[ "$BASEIMAGE" == "$pres" ] && {
+    ext="${@##*.}"
+    shopt -s nocasematch
+    case "$ext" in
+        "prs" ) ./presentations -S "$@";;
+        "pps" ) ./presentations -S "$@";;
+        "ppsx" ) ./presentations -S "$@";;
+        * ) ./presentations "$@";;
+    esac
+    exit 0
+}
+
+cwd="${APPIMAGE%/*}"
+cd "$cwd"
+ln "$BASEIMAGE" "$text"
+ln "$BASEIMAGE" "$plan"
+ln "$BASEIMAGE" "$pres"
+
+desktopfile1=~/.local/share/applications/textmaker-free24.desktop
+desktopfile2=~/.local/share/applications/planmaker-free24.desktop
+desktopfile3=~/.local/share/applications/presentations-free24.desktop
+iconfile1=~/.local/share/pixmaps/tml_1024.png
+iconfile2=~/.local/share/pixmaps/pml_1024.png
+iconfile3=~/.local/share/pixmaps/prl_1024.png
+
+cd "$APPDIR"
+
+test ! -e "$desktopfile1" && cp textmaker-free24.desktop ~/.local/share/applications/
+test ! -e "$desktopfile2" && cp planmaker-free24.desktop ~/.local/share/applications/
+test ! -e "$desktopfile3" && cp presentations-free24.desktop ~/.local/share/applications/
+test ! -e "$iconfile1" && cp tml_1024.png ~/.local/share/pixmaps/
+test ! -e "$iconfile2" && cp pml_1024.png ~/.local/share/pixmaps/
+test ! -e "$iconfile3" && cp prl_1024.png ~/.local/share/pixmaps/
+
+if ! grep -q "$cwd/$text" "$desktopfile1"; then
+    sed -i "s:Exec=.*:Exec=$cwd/$text:" "$desktopfile1"
+    sed -i "s:Icon=.*:Icon=$iconfile1:" "$desktopfile1"
+fi
+
+if ! grep -q "$cwd/$plan" "$desktopfile2"; then
+    sed -i "s:Exec=.*:Exec=$cwd/$plan:" "$desktopfile2"
+    sed -i "s:Icon=.*:Icon=$iconfile2:" "$desktopfile2"
+fi
+
+if ! grep -q "$cwd/$pres" "$desktopfile3"; then
+    sed -i "s:Exec=.*:Exec=$cwd/$pres:" "$desktopfile3"
+    sed -i "s:Icon=.*:Icon=$iconfile3:" "$desktopfile3"
+
+fi
+
+install -d ~/.local/share/mime/packages
+cp FreeOffice/mime/softmaker-freeoffice24.xml ~/.local/share/mime/packages
+
+for size in 16 24 32 48 64 96 128 256 512 1024
+do
+    install -d ~/.local/share/icons/hicolor/${size}x${size}/apps
+    cp "FreeOffice/icons/pml_${size}.png" ~/.local/share/icons/hicolor/${size}x${size}/apps
+    cp "FreeOffice/icons/prl_${size}.png" ~/.local/share/icons/hicolor/${size}x${size}/apps
+    cp "FreeOffice/icons/tml_${size}.png" ~/.local/share/icons/hicolor/${size}x${size}/apps
+
+    install -d ~/.local/share/icons/hicolor/${size}x${size}/mimetypes
+    ln -s ~/.local/share/icons/hicolor/${size}x${size}/apps/pmd_${size}.png ~/.local/share/icons/hicolor/${size}x${size}/mimetypes/application-x-pmd.png
+    ln -s ~/.local/share/icons/hicolor/${size}x${size}/apps/prd_${size}.png ~/.local/share/icons/hicolor/${size}x${size}/mimetypes/application-x-prd.png
+    ln -s ~/.local/share/icons/hicolor/${size}x${size}/apps/tmd_${size}.png ~/.local/share/icons/hicolor/${size}x${size}/mimetypes/application-x-tmd.png
+done
+
+/usr/bin/update-desktop-database -q || true
+/usr/bin/update-mime-database ~/.local/share/mime 2>&1 >&- || true
+test -e usr/share/icons/hicolor/icon-theme.cache && {
+    test -x /usr/bin/gtk-update-icon-cache && {
+        /usr/bin/gtk-update-icon-cache -f ~/.local/share/pixmaps/ 2>&1 >&- || true
+        /usr/bin/gtk-update-icon-cache -f ~/.local/share/icons/hicolor 2>&1 >&- || true
+    }
+}
+' > AppRun
+
+chmod +x AppRun
+cd ..
+
+printf "\n"; for ((i=0; i<$COLUMNS; i++)); { printf '─'; }; echo -e "\n"
+
+env ARCH=$arch ./appimagetool-x86_64.AppImage "$prg.AppDir"
+appimage_name=FreeOffice_2024_TextMaker
+mv "${appimage_name// /_}-$arch.AppImage" "$prg-$version-$arch.AppImage"
+
+printf "\n"; for ((i=0; i<$COLUMNS; i++)); { printf '─'; }; echo -e "\n"
+
+rm -rf "$prg.AppDir"
+cd ..
+
+echo "appimage saved in $destdir/$prg-$version-$arch.AppImage"
+exit 0
